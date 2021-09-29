@@ -33,7 +33,8 @@ nj=35
 decode_nj=38   # note: should not be >38 which is the number of speakers in the dev set
                # after applying --seconds-per-spk-max 180.  We decode with 4 threads, so
                # this will be too many jobs if you're using run.pl.
-# stage: 
+
+# stage: you can start from the stage you stopped last time
 stage=0
 train_rnnlm=false
 train_lm=false
@@ -49,6 +50,7 @@ if [ $stage -le 0 ]; then
 fi
 
 if [ $stage -le 1 ]; then
+  # prepare dev, train and test datasets
   local/prepare_data.sh
   # Split speakers up into 3-minute chunks.  This doesn't hurt adaptation, and
   # lets us use more jobs for decoding etc.
