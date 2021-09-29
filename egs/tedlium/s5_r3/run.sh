@@ -18,11 +18,16 @@
 # Apache 2.0
 #
 
+# set the running environment: locally or cluster
 . ./cmd.sh
+# add openfst, sph2pipe, kaldi root and src bin directories to path
 . ./path.sh
 
-
+# set -e: if a simple command fails for some reasons, the shell shall immediately exit. see: https://linuxcommand.org/lc3_man_pages/seth.html 
+# set -o pipefail: Pipelines fail on the first command which fails instead of dying later on down the pipeline.
+# set -u: The shell prints a message to stderr when it tries to expand a variable that is not set.
 set -e -o pipefail -u
+
 
 nj=35
 decode_nj=38   # note: should not be >38 which is the number of speakers in the dev set
