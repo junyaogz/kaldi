@@ -33,6 +33,7 @@ nj=35
 decode_nj=38   # note: should not be >38 which is the number of speakers in the dev set
                # after applying --seconds-per-spk-max 180.  We decode with 4 threads, so
                # this will be too many jobs if you're using run.pl.
+# stage: 
 stage=0
 train_rnnlm=false
 train_lm=false
@@ -40,6 +41,9 @@ train_lm=false
 . utils/parse_options.sh # accept options
 
 # Data preparation
+# download and extract the data (approximately 50.6 GB) from http://www.openslr.org/resources/51/TEDLIUM_release-3.tgz
+# it should contain 2351 .sph files
+# if stage is less or equal to 0
 if [ $stage -le 0 ]; then
   local/download_data.sh
 fi
