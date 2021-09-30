@@ -268,3 +268,5 @@ exit 0
 # https://medium.com/swlh/automatic-speech-recognition-system-using-kaldi-from-scratch-337eb7c8eea8
 # https://blog.csdn.net/zhangming0411/article/details/108349503
 # http://www.danielpovey.com/files/2018_icassp_lattice_pruning.pdf
+# https://blog.csdn.net/dearwind153/article/details/70053704
+
