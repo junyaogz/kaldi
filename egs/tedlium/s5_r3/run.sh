@@ -124,8 +124,6 @@ if [ $stage -le 9 ]; then
 fi
 
 # create an HCLG decoding graph, check 
-# https://bbs.huaweicloud.com/blogs/detail/198071 
-# https://kaldi-asr.org/doc/graph.html
 # Usage: utils/mkgraph.sh [options] <lang-dir> <model-dir><graphdir>
 # and decode
 # Usage: steps/decode.sh [options] <graph-dir> <data-dir> <decode-dir>"
@@ -142,6 +140,8 @@ if [ $stage -le 10 ]; then
   done
 fi
 
+# align the data, reduce dimensions by LDA(Linear Discriminant Analysis) and 
+# then apply MLLT(Maximum Likelihood Linear Transform)
 if [ $stage -le 11 ]; then
   steps/align_si.sh --nj $nj --cmd "$train_cmd" \
     data/train data/lang_nosp exp/tri1 exp/tri1_ali
@@ -150,6 +150,7 @@ if [ $stage -le 11 ]; then
     4000 50000 data/train data/lang_nosp exp/tri1_ali exp/tri2
 fi
 
+# create decoding graph and decode
 if [ $stage -le 12 ]; then
   utils/mkgraph.sh data/lang_nosp exp/tri2 exp/tri2/graph_nosp
   for dset in dev test; do
@@ -160,6 +161,9 @@ if [ $stage -le 12 ]; then
   done
 fi
 
+# steps/get_prons.sh create counts of pronunciations from training data
+# utils/dict_dir_add_pronprobs.sh Take the pronunciation counts and create a modified dictionary directory with pronunciation probabilities.
+# usage: [options] <input-dict-dir> <input-pron-counts>[input-sil-counts] [input-bigram-counts] <output-dict-dir>
 if [ $stage -le 13 ]; then
   steps/get_prons.sh --cmd "$train_cmd" data/train data/lang_nosp exp/tri2
   utils/dict_dir_add_pronprobs.sh --max-normalize true \
@@ -168,6 +172,7 @@ if [ $stage -le 13 ]; then
     exp/tri2/pron_bigram_counts_nowb.txt data/local/dict
 fi
 
+# create decoding graph and decode
 if [ $stage -le 14 ]; then
   utils/prepare_lang.sh data/local/dict "<unk>" data/local/lang data/lang
   cp -rT data/lang data/lang_rescore
@@ -184,6 +189,9 @@ if [ $stage -le 14 ]; then
   done
 fi
 
+# Train a triphone model with Speaker Adaptation Training
+# Usage: steps/train_sat.sh <#leaves> <#gauss> <data> <lang> <ali-dir> <exp-dir>
+# create decoding graph and decode
 if [ $stage -le 15 ]; then
   steps/align_si.sh --nj $nj --cmd "$train_cmd" \
     data/train data/lang exp/tri2 exp/tri2_ali
@@ -201,6 +209,7 @@ if [ $stage -le 15 ]; then
   done
 fi
 
+# re-segment training data selecting only the "good" audio that matches the transcripts
 if [ $stage -le 16 ]; then
   # this does some data-cleaning.  It actually degrades the GMM-level results
   # slightly, but the cleaned data should be useful when we add the neural net and chain
@@ -208,12 +217,14 @@ if [ $stage -le 16 ]; then
   local/run_cleanup_segmentation.sh
 fi
 
+# apply Time delay neural network (TDNN) with GPUs
 if [ $stage -le 17 ]; then
   # This will only work if you have GPUs on your system (and note that it requires
   # you to have the queue set up the right way... see kaldi-asr.org/doc/queue.html)
   local/chain/run_tdnn.sh
 fi
 
+# train rnnlm models
 if [ $stage -le 18 ]; then
   # You can either train your own rnnlm or download a pre-trained one
   if $train_rnnlm; then
@@ -224,6 +235,8 @@ if [ $stage -le 18 ]; then
   fi
 fi
 
+# the final decode step
+# rnnlm/lmrescore_pruned.sh rescores lattices with KALDI RNNLM using a pruned algorithm
 if [ $stage -le 19 ]; then
   # Here we rescore the lattices generated at stage 17
   rnnlm_dir=exp/rnnlm_lstm_tdnn_a_averaged
@@ -248,3 +261,10 @@ fi
 
 echo "$0: success."
 exit 0
+
+# references
+# https://bbs.huaweicloud.com/blogs/detail/198071 
+# https://kaldi-asr.org/doc/graph.html
+# https://medium.com/swlh/automatic-speech-recognition-system-using-kaldi-from-scratch-337eb7c8eea8
+# https://blog.csdn.net/zhangming0411/article/details/108349503
+# http://www.danielpovey.com/files/2018_icassp_lattice_pruning.pdf
