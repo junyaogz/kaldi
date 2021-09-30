@@ -42,7 +42,7 @@ train_lm=false
 . utils/parse_options.sh # accept options
 
 # Data preparation
-# download and extract the data (approximately 50.6 GB) from http://www.openslr.org/resources/51/TEDLIUM_release-3.tgz
+# download and extract the data (approximately 54 GB) from http://www.openslr.org/resources/51/TEDLIUM_release-3.tgz
 # it should contain 2351 .sph files
 # if stage is less or equal to 0
 if [ $stage -le 0 ]; then
@@ -61,16 +61,19 @@ if [ $stage -le 1 ]; then
   done
 fi
 
-
+# prepare lexicon.txt, nonsilence_phones.txt and silence_phones.txt
 if [ $stage -le 2 ]; then
   local/prepare_dict.sh
 fi
 
+# prepare language diretory data/lang_nosp
+# syntax: utils/prepare_lang.sh <dict-src-dir> <oov-dict-entry> <tmp-dir> <lang-dir>
 if [ $stage -le 3 ]; then
   utils/prepare_lang.sh data/local/dict_nosp \
     "<unk>" data/local/lang_nosp data/lang_nosp
 fi
 
+# train n-gram language model
 if [ $stage -le 4 ]; then
   # later on we'll change this script so you have the option to
   # download the pre-built LMs from openslr.org instead of building them
@@ -82,10 +85,12 @@ if [ $stage -le 4 ]; then
   fi
 fi
 
+# convert 4-gram ARPA model to FST model
 if [ $stage -le 5 ]; then
   local/format_lms.sh
 fi
 
+# Extract MFCC features and normalize with CMVN
 # Feature extraction
 if [ $stage -le 6 ]; then
   for set in test dev train; do
@@ -95,6 +100,7 @@ if [ $stage -le 6 ]; then
   done
 fi
 
+# split the training data to shorter segments
 # Now we have 452 hours of training data.
 # Well create a subset with 10k short segments to make flat-start training easier:
 if [ $stage -le 7 ]; then
@@ -102,12 +108,14 @@ if [ $stage -le 7 ]; then
   utils/data/remove_dup_utts.sh 10 data/train_10kshort data/train_10kshort_nodup
 fi
 
-# Train
+# Train monophone model
 if [ $stage -le 8 ]; then
   steps/train_mono.sh --nj 20 --cmd "$train_cmd" \
     data/train_10kshort_nodup data/lang_nosp exp/mono
 fi
 
+# align the data and train tri1 model
+# steps/train_deltas.sh <num-leaves> <tot-gauss> <data-dir> <lang-dir> <alignment-dir> <exp-dir>
 if [ $stage -le 9 ]; then
   steps/align_si.sh --nj $nj --cmd "$train_cmd" \
     data/train data/lang_nosp exp/mono exp/mono_ali
@@ -115,6 +123,12 @@ if [ $stage -le 9 ]; then
     2500 30000 data/train data/lang_nosp exp/mono_ali exp/tri1
 fi
 
+# create an HCLG decoding graph, check 
+# https://bbs.huaweicloud.com/blogs/detail/198071 
+# https://kaldi-asr.org/doc/graph.html
+# Usage: utils/mkgraph.sh [options] <lang-dir> <model-dir><graphdir>
+# and decode
+# Usage: steps/decode.sh [options] <graph-dir> <data-dir> <decode-dir>"
 if [ $stage -le 10 ]; then
   utils/mkgraph.sh data/lang_nosp exp/tri1 exp/tri1/graph_nosp
 
