@@ -18,17 +18,19 @@
 # Apache 2.0
 #
 
+# step 0.a
 # set the running environment: locally or cluster
 . ./cmd.sh
 # add openfst, sph2pipe, kaldi root and src bin directories to path
 . ./path.sh
 
+# step 0.b
 # set -e: if a simple command fails for some reasons, the shell shall immediately exit. see: https://linuxcommand.org/lc3_man_pages/seth.html 
 # set -o pipefail: Pipelines fail on the first command which fails instead of dying later on down the pipeline.
 # set -u: The shell prints a message to stderr when it tries to expand a variable that is not set.
 set -e -o pipefail -u
 
-
+# step 0.c
 nj=35
 decode_nj=38   # note: should not be >38 which is the number of speakers in the dev set
                # after applying --seconds-per-spk-max 180.  We decode with 4 threads, so
@@ -41,7 +43,7 @@ train_lm=false
 
 . utils/parse_options.sh # accept options
 
-# Data preparation
+# step 0.d Data preparation
 # download and extract the data (approximately 54 GB) from http://www.openslr.org/resources/51/TEDLIUM_release-3.tgz
 # it should contain 2351 .sph files
 # if stage is less or equal to 0
@@ -49,6 +51,7 @@ if [ $stage -le 0 ]; then
   local/download_data.sh
 fi
 
+# step 1
 if [ $stage -le 1 ]; then
   # prepare dev, train and test datasets
   local/prepare_data.sh
@@ -61,11 +64,13 @@ if [ $stage -le 1 ]; then
   done
 fi
 
+# step 2
 # prepare lexicon.txt, nonsilence_phones.txt and silence_phones.txt
 if [ $stage -le 2 ]; then
   local/prepare_dict.sh
 fi
 
+# step 3
 # prepare language diretory data/lang_nosp
 # syntax: utils/prepare_lang.sh <dict-src-dir> <oov-dict-entry> <tmp-dir> <lang-dir>
 if [ $stage -le 3 ]; then
@@ -73,6 +78,7 @@ if [ $stage -le 3 ]; then
     "<unk>" data/local/lang_nosp data/lang_nosp
 fi
 
+# step 4
 # train n-gram language model
 if [ $stage -le 4 ]; then
   # later on we'll change this script so you have the option to
@@ -85,11 +91,13 @@ if [ $stage -le 4 ]; then
   fi
 fi
 
+# step 5
 # convert 4-gram ARPA model to FST model
 if [ $stage -le 5 ]; then
   local/format_lms.sh
 fi
 
+# step 6
 # Extract MFCC features and normalize with CMVN
 # Feature extraction
 if [ $stage -le 6 ]; then
@@ -100,6 +108,7 @@ if [ $stage -le 6 ]; then
   done
 fi
 
+# step 7
 # split the training data to shorter segments
 # Now we have 452 hours of training data.
 # Well create a subset with 10k short segments to make flat-start training easier:
@@ -108,12 +117,14 @@ if [ $stage -le 7 ]; then
   utils/data/remove_dup_utts.sh 10 data/train_10kshort data/train_10kshort_nodup
 fi
 
+# step 8
 # Train monophone model
 if [ $stage -le 8 ]; then
   steps/train_mono.sh --nj 20 --cmd "$train_cmd" \
     data/train_10kshort_nodup data/lang_nosp exp/mono
 fi
 
+# step 9
 # align the data and train tri1 model
 # steps/train_deltas.sh <num-leaves> <tot-gauss> <data-dir> <lang-dir> <alignment-dir> <exp-dir>
 if [ $stage -le 9 ]; then
@@ -123,6 +134,7 @@ if [ $stage -le 9 ]; then
     2500 30000 data/train data/lang_nosp exp/mono_ali exp/tri1
 fi
 
+# step 10
 # create an HCLG decoding graph, check 
 # Usage: utils/mkgraph.sh [options] <lang-dir> <model-dir><graphdir>
 # and decode
@@ -140,6 +152,7 @@ if [ $stage -le 10 ]; then
   done
 fi
 
+# step 11
 # align the data, reduce dimensions by LDA(Linear Discriminant Analysis) and 
 # then apply MLLT(Maximum Likelihood Linear Transform)
 if [ $stage -le 11 ]; then
@@ -150,6 +163,7 @@ if [ $stage -le 11 ]; then
     4000 50000 data/train data/lang_nosp exp/tri1_ali exp/tri2
 fi
 
+# step 12
 # create decoding graph and decode
 if [ $stage -le 12 ]; then
   utils/mkgraph.sh data/lang_nosp exp/tri2 exp/tri2/graph_nosp
@@ -161,6 +175,7 @@ if [ $stage -le 12 ]; then
   done
 fi
 
+# step 13
 # steps/get_prons.sh create counts of pronunciations from training data
 # utils/dict_dir_add_pronprobs.sh Take the pronunciation counts and create a modified dictionary directory with pronunciation probabilities.
 # usage: [options] <input-dict-dir> <input-pron-counts>[input-sil-counts] [input-bigram-counts] <output-dict-dir>
@@ -172,6 +187,7 @@ if [ $stage -le 13 ]; then
     exp/tri2/pron_bigram_counts_nowb.txt data/local/dict
 fi
 
+# step 14
 # create decoding graph and decode
 if [ $stage -le 14 ]; then
   utils/prepare_lang.sh data/local/dict "<unk>" data/local/lang data/lang
@@ -189,6 +205,7 @@ if [ $stage -le 14 ]; then
   done
 fi
 
+# step 15
 # Train a triphone model with Speaker Adaptation Training
 # Usage: steps/train_sat.sh <#leaves> <#gauss> <data> <lang> <ali-dir> <exp-dir>
 # create decoding graph and decode
@@ -209,6 +226,7 @@ if [ $stage -le 15 ]; then
   done
 fi
 
+# step 16
 # re-segment training data selecting only the "good" audio that matches the transcripts
 if [ $stage -le 16 ]; then
   # this does some data-cleaning.  It actually degrades the GMM-level results
@@ -217,6 +235,7 @@ if [ $stage -le 16 ]; then
   local/run_cleanup_segmentation.sh
 fi
 
+# step 17
 # apply Time delay neural network (TDNN) with GPUs
 if [ $stage -le 17 ]; then
   # This will only work if you have GPUs on your system (and note that it requires
@@ -224,6 +243,7 @@ if [ $stage -le 17 ]; then
   local/chain/run_tdnn.sh
 fi
 
+# step 18
 # train rnnlm models
 if [ $stage -le 18 ]; then
   # You can either train your own rnnlm or download a pre-trained one
@@ -235,6 +255,7 @@ if [ $stage -le 18 ]; then
   fi
 fi
 
+# step 19
 # the final decode step
 # rnnlm/lmrescore_pruned.sh rescores lattices with KALDI RNNLM using a pruned algorithm
 if [ $stage -le 19 ]; then
