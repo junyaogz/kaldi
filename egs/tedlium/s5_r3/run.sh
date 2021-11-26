@@ -40,7 +40,7 @@ decode_nj=38   # note: should not be >38 which is the number of speakers in the 
                # this will be too many jobs if you're using run.pl.
 
 # stage: you can start from the stage you stopped last time
-stage=0
+stage=18
 train_rnnlm=false
 train_lm=false
 
