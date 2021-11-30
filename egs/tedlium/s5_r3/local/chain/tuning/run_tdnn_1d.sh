@@ -33,10 +33,10 @@ set -e -o pipefail
 
 # First the options that are passed through to run_ivector_common.sh
 # (some of which are also used in this script directly).
-stage=0
+stage=18
 
-nj=15
-decode_nj=15
+nj=10
+decode_nj=10
 xent_regularize=0.1
 dropout_schedule='0,0@0.20,0.5@0.50,0'
 
@@ -213,7 +213,7 @@ if [ $stage -le 18 ]; then
     --trainer.add-option="--optimization.memory-compression-level=2" \
     --egs.dir "$common_egs_dir" \
     --egs.opts "--frames-overlap-per-eg 0 --constrained false --online-cmvn $online_cmvn" \
-    --egs.chunk-width 150,110,100 \
+    --egs.chunk-width 150,110,70 \
     --trainer.num-chunk-per-minibatch 64 \
     --trainer.frames-per-iter 5000000 \
     --trainer.num-epochs 6 \
