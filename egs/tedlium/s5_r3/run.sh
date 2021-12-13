@@ -256,51 +256,51 @@ if [ $stage -le 16 ]; then
 fi
 
 # step 17
-echo "step 17....."
+#echo "step 17....."
 # apply Time delay neural network (TDNN) with GPUs
-if [ $stage -le 17 ]; then
+#if [ $stage -le 17 ]; then
   # This will only work if you have GPUs on your system (and note that it requires
   # you to have the queue set up the right way... see kaldi-asr.org/doc/queue.html)
-  local/chain/run_tdnn.sh
-fi
+  #local/chain/run_tdnn.sh
+#fi
 
 # step 18
-echo "step 18....."
+#echo "step 18....."
 # train rnnlm models
-if [ $stage -le 18 ]; then
+#if [ $stage -le 18 ]; then
   # You can either train your own rnnlm or download a pre-trained one
-  if $train_rnnlm; then
-    local/rnnlm/tuning/run_lstm_tdnn_a.sh
-    local/rnnlm/average_rnnlm.sh
-  else
-    local/ted_download_rnnlm.sh
-  fi
-fi
+  #if $train_rnnlm; then
+    #local/rnnlm/tuning/run_lstm_tdnn_a.sh
+    #local/rnnlm/average_rnnlm.sh
+  #else
+    #local/ted_download_rnnlm.sh
+  #fi
+#fi
 
 # step 19
-echo "step 19....."
+#echo "step 19....."
 # the final decode step
 # rnnlm/lmrescore_pruned.sh rescores lattices with KALDI RNNLM using a pruned algorithm
-if [ $stage -le 19 ]; then
+#if [ $stage -le 19 ]; then
   # Here we rescore the lattices generated at stage 17
-  rnnlm_dir=exp/rnnlm_lstm_tdnn_a_averaged
-  lang_dir=data/lang_chain
-  ngram_order=4
+  #rnnlm_dir=exp/rnnlm_lstm_tdnn_a_averaged
+  #lang_dir=data/lang_chain
+  #ngram_order=4
 
-  for dset in dev test; do
-    data_dir=data/${dset}_hires
-    decoding_dir=exp/chain_cleaned/tdnnf_1a/decode_${dset}
-    suffix=$(basename $rnnlm_dir)
-    output_dir=${decoding_dir}_$suffix
+  #for dset in dev test; do
+    #data_dir=data/${dset}_hires
+    #decoding_dir=exp/chain_cleaned/tdnnf_1a/decode_${dset}
+    #suffix=$(basename $rnnlm_dir)
+    #output_dir=${decoding_dir}_$suffix
 
-    rnnlm/lmrescore_pruned.sh \
-      --cmd "$decode_cmd --mem 4G" \
-      --weight 0.5 --max-ngram-order $ngram_order \
-      $lang_dir $rnnlm_dir \
-      $data_dir $decoding_dir \
-      $output_dir
-  done
-fi
+    #rnnlm/lmrescore_pruned.sh \
+      #--cmd "$decode_cmd --mem 4G" \
+      #--weight 0.5 --max-ngram-order $ngram_order \
+      #$lang_dir $rnnlm_dir \
+      #$data_dir $decoding_dir \
+      #$output_dir
+  #done
+#fi
 
 
 echo "$0: success."
