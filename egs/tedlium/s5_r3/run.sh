@@ -246,14 +246,14 @@ if [ $stage -le 15 ]; then
 fi
 
 # step 16
-echo "step 16....."
+#echo "step 16....."
 # re-segment training data selecting only the "good" audio that matches the transcripts
-if [ $stage -le 16 ]; then
+#if [ $stage -le 16 ]; then
   # this does some data-cleaning.  It actually degrades the GMM-level results
   # slightly, but the cleaned data should be useful when we add the neural net and chain
   # systems.  If not we'll remove this stage.
-  local/run_cleanup_segmentation.sh
-fi
+  #local/run_cleanup_segmentation.sh
+#fi
 
 # step 17
 #echo "step 17....."
@@ -306,7 +306,7 @@ fi
 echo "$0: success."
 exit 0
 
-# references
+# References:
 # https://kaldi-asr.org/doc/graph.html
 # https://medium.com/swlh/automatic-speech-recognition-system-using-kaldi-from-scratch-337eb7c8eea8
 # http://www.danielpovey.com/files/2018_icassp_lattice_pruning.pdf
