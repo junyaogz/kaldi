@@ -307,10 +307,6 @@ echo "$0: success."
 exit 0
 
 # references
-# https://bbs.huaweicloud.com/blogs/detail/198071 
 # https://kaldi-asr.org/doc/graph.html
 # https://medium.com/swlh/automatic-speech-recognition-system-using-kaldi-from-scratch-337eb7c8eea8
-# https://blog.csdn.net/zhangming0411/article/details/108349503
 # http://www.danielpovey.com/files/2018_icassp_lattice_pruning.pdf
-# https://blog.csdn.net/dearwind153/article/details/70053704
-# seach keywords: HCLG explaination
